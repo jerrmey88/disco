@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>外掛大腦 5.0</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f8; margin: 0; padding: 15px; color: #333; padding-bottom: 50px; }
+        .container { max-width: 500px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        select { font-size: 1.2rem; padding: 5px 10px; border-radius: 8px; border: 1px solid #ccc; background: white; font-weight: bold; }
+        
+        /* 狀態卡片與水位 */
+        .status-card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; text-align: center; }
+        .water-bar-container { width: 100%; height: 30px; background-color: #e0e0e0; border-radius: 15px; overflow: hidden; position: relative; margin: 15px 0; box-shadow: inset 0 2px 5px rgba(0,0,0,0.1); }
+        .water-fill { height: 100%; background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%); transition: width 0.4s ease; display: flex; align-items: center; padding-left: 10px; color: white; font-weight: bold; font-size: 0.85rem; white-space: nowrap; }
+        .target-text { font-size: 1.1rem; font-weight: bold; margin-bottom: 5px; }
+        .result-text { font-size: 1.2rem; font-weight: bold; margin-top: 10px; padding: 10px; border-radius: 8px; }
+        .success { background: #e8f5e9; color: #2e7d32; }
+        .danger { background: #ffebee; color: #c62828; }
+        .survival-tracking { font-size: 0.9rem; color: #666; margin-top: 5px; }
+
+        /* 區塊樣式 */
+        .section { background: white; padding: 15px; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); margin-bottom: 20px; }
+        .section h3 { margin-top: 0; font-size: 1.1rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 8px; color: #2c3e50; }
+        
+        /* 收入滑桿區 */
+        .input-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .input-row label { font-size: 0.95rem; font-weight: 500; }
+        .input-row input { width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 8px; text-align: center; font-size: 1rem; }
+
+        /* 記帳輸入區 */
+        .expense-form { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
+        .expense-form input[type="text"] { flex: 2; min-width: 100px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; }
+        .expense-form input[type="number"] { flex: 1; min-width: 70px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; }
+        .expense-form select { flex: 1; min-width: 80px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.9rem; font-weight: normal; }
+        .btn-add { width: 100%; padding: 12px; background: #2c3e50; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+        .btn-add:active { background: #1a252f; }
+
+        /* 紀錄列表 */
+        .expense-list { list-style: none; padding: 0; margin: 0; max-height: 200px; overflow-y: auto; }
+        .expense-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+        .tag { padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
+        .tag-survival { background: #e3f2fd; color: #1565c0; }
+        .tag-entertainment { background: #fce4ec; color: #c2185b; }
+        .tag-investment { background: #f3e5f5; color: #7b1fa2; }
+        .btn-delete { background: #ff5252; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 0.8rem; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2 style="margin:0;">🧠 導航儀</h2>
+        <select id="monthSelector" onchange="loadData()">
+            <option value="2026-04">2026 四月</option>
+            <option value="2026-05">2026 五月</option>
+            <option value="2026-06">2026 六月</option>
+        </select>
+    </div>
+
+    <div class="status-card">
+        <div class="target-text">總目標：<span id="displayTarget">20,000</span></div>
+        <div class="water-bar-container">
+            <div id="waterBar" class="water-fill" style="width: 0%;">0%</div>
+        </div>
+        <div class="survival-tracking">生存預算餘額：<span id="survivalBalance">20,000</span> / 20,000</div>
+        <div id="statusResult" class="result-text danger">
+            🚨 尚缺 20,000 元
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>💰 本月收入紀錄</h3>
+        <div class="input-row">
+            <label>教課收入 ($)</label>
+            <input type="number" id="teaching" value="0" min="0" onchange="saveData()">
+        </div>
+        <div class="input-row">
+            <label>已排硬體 (2750/場)</label>
+            <input type="number" id="gigs" value="0" min="0" onchange="saveData()">
+        </div>
+        <div class="input-row">
+            <label>打工時數 (225/hr)</label>
+            <input type="number" id="ptHours" value="0" min="0" onchange="saveData()">
+        </div>
+        <div class="input-row">
+            <label>Bass 收入 ($)</label>
+            <input type="number" id="bassIncome" value="0" min="0" onchange="saveData()">
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>💸 每日花費記帳</h3>
+        <div class="expense-form">
+            <input type="text" id="expName" placeholder="項目 (如:耳機)">
+            <input type="number" id="expAmount" placeholder="金額">
+            <select id="expCategory">
+                <option value="生存">生存</option>
+                <option value="娛樂">娛樂</option>
+                <option value="投資">投資</option>
+            </select>
+            <button class="btn-add" onclick="addExpense()">+ 記一筆</button>
+        </div>
+        <ul id="expenseList" class="expense-list">
+            </ul>
+    </div>
+</div>
+
+<script>
+    const BASE_SURVIVAL = 20000;
+    const GIG_RATE = 2750;
+    const PT_RATE = 225;
+    
+    // 取得當前選擇的月份作為資料庫 Key
+    function getStorageKey() {
+        return 'brainApp_' + document.getElementById('monthSelector').value;
+    }
+
+    // 載入資料
+    function loadData() {
+        const key = getStorageKey();
+        const saved = localStorage.getItem(key);
+        let data = saved ? JSON.parse(saved) : {
+            teaching: 0, gigs: 0, ptHours: 0, bassIncome: 0, expenses: []
+        };
+
+        // 填入收入欄位
+        document.getElementById('teaching').value = data.teaching;
+        document.getElementById('gigs').value = data.gigs;
+        document.getElementById('ptHours').value = data.ptHours;
+        document.getElementById('bassIncome').value = data.bassIncome;
+
+        // 重新渲染列表並計算
+        renderExpenses(data.expenses);
+        calculateState(data);
+    }
+
+    // 儲存資料
+    function saveData() {
+        const key = getStorageKey();
+        const saved = localStorage.getItem(key);
+        let data = saved ? JSON.parse(saved) : { expenses: [] };
+
+        data.teaching = parseInt(document.getElementById('teaching').value) || 0;
+        data.gigs = parseInt(document.getElementById('gigs').value) || 0;
+        data.ptHours = parseInt(document.getElementById('ptHours').value) || 0;
+        data.bassIncome = parseInt(document.getElementById('bassIncome').value) || 0;
+
+        localStorage.setItem(key, JSON.stringify(data));
+        calculateState(data);
+    }
+
+    // 新增花費
+    function addExpense() {
+        const name = document.getElementById('expName').value.trim();
+        const amount = parseInt(document.getElementById('expAmount').value);
+        const category = document.getElementById('expCategory').value;
+
+        if (!name || isNaN(amount) || amount <= 0) {
+            alert("請輸入正確的項目名稱與金額！");
+            return;
+        }
+
+        const key = getStorageKey();
+        const saved = localStorage.getItem(key);
+        let data = saved ? JSON.parse(saved) : { teaching:0, gigs:0, ptHours:0, bassIncome:0, expenses: [] };
+
+        data.expenses.push({ id: Date.now(), name, amount, category });
+        localStorage.setItem(key, JSON.stringify(data));
+        
+        // 清空輸入框
+        document.getElementById('expName').value = '';
+        document.getElementById('expAmount').value = '';
+        
+        renderExpenses(data.expenses);
+        calculateState(data);
+    }
+
+    // 刪除花費
+    function deleteExpense(id) {
+        const key = getStorageKey();
+        let data = JSON.parse(localStorage.getItem(key));
+        data.expenses = data.expenses.filter(exp => exp.id !== id);
+        localStorage.setItem(key, JSON.stringify(data));
+        renderExpenses(data.expenses);
+        calculateState(data);
+    }
+
+    // 渲染花費列表
+    function renderExpenses(expenses) {
+        const list = document.getElementById('expenseList');
+        list.innerHTML = '';
+        expenses.forEach(exp => {
+            let tagClass = 'tag-survival';
+            if(exp.category === '娛樂') tagClass = 'tag-entertainment';
+            if(exp.category === '投資') tagClass = 'tag-investment';
+
+            const li = document.createElement('li');
+            li.className = 'expense-item';
+            li.innerHTML = `
+                <div>
+                    <span class="tag ${tagClass}">${exp.category}</span>
+                    <span style="margin-left:8px; font-weight:500;">${exp.name}</span>
+                </div>
+                <div>
+                    <span style="margin-right:10px; color:#666;">$${exp.amount}</span>
+                    <button class="btn-delete" onclick="deleteExpense(${exp.id})">刪除</button>
+                </div>
+            `;
+            list.appendChild(li);
+        });
+    }
+
+    // 核心計算邏輯
+    function calculateState(data) {
+        let totalIncome = data.teaching + (data.gigs * GIG_RATE) + (data.ptHours * PT_RATE) + data.bassIncome;
+        
+        let survivalSpend = 0;
+        let extraSpend = 0; // 娛樂 + 投資
+
+        data.expenses.forEach(exp => {
+            if (exp.category === '生存') survivalSpend += exp.amount;
+            else extraSpend += exp.amount;
+        });
+
+        // 動態目標 = 基礎生存(20000) + 額外花費(娛樂/投資)
+        let totalTarget = BASE_SURVIVAL + extraSpend;
+        let extraMoney = totalIncome - totalTarget;
+
+        // 更新 UI
+        document.getElementById('displayTarget').innerText = totalTarget.toLocaleString();
+        
+        let survivalBal = BASE_SURVIVAL - survivalSpend;
+        let balText = document.getElementById('survivalBalance');
+        balText.innerText = survivalBal.toLocaleString();
+        balText.style.color = survivalBal < 0 ? '#c62828' : '#2e7d32';
+
+        let waterBar = document.getElementById('waterBar');
+        let percentage = totalTarget > 0 ? (totalIncome / totalTarget) * 100 : 0;
+        if (percentage > 100) percentage = 100;
+        waterBar.style.width = percentage + '%';
+        waterBar.innerText = `目前收入 $${totalIncome.toLocaleString()}`;
+
+        let statusResult = document.getElementById('statusResult');
+        if (extraMoney >= 0) {
+            statusResult.className = 'result-text success';
+            statusResult.innerText = `🎉 達標！大餐/娛樂可用：+${extraMoney.toLocaleString()} 元`;
+        } else {
+            statusResult.className = 'result-text danger';
+            statusResult.innerText = `🚨 尚缺 ${Math.abs(extraMoney).toLocaleString()} 元，建議接案或打工。`;
+        }
+    }
+
+    // 初始化
+    loadData();
+</script>
+
+</body>
+</html>
