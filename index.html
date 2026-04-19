@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>外掛大腦 9.2</title>
+    <title>外掛大腦 9.3</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #0f0f0f; margin: 0; padding: 15px; color: #e0e0e0; padding-bottom: 60px; }
         .container { max-width: 500px; margin: 0 auto; }
@@ -50,7 +50,7 @@
 
 <div class="container">
     <div class="header">
-        <h2 style="margin:0; font-size: 1.3rem; letter-spacing: 3px; font-weight: 900; color: #fff;">DISCO BRAIN 9.2</h2>
+        <h2 style="margin:0; font-size: 1.3rem; letter-spacing: 3px; font-weight: 900; color: #fff;">DISCO BRAIN 9.3</h2>
         <select id="monthSelector" onchange="loadData()">
             <option value="2026-04">APRIL</option>
             <option value="2026-05">MAY</option>
@@ -75,7 +75,7 @@
             <div>投資/娛樂：<span id="extraDiff" style="font-weight: 900;">0</span></div>
         </div>
         
-        <div id="statusResult" class="result-text danger">運算中...</div>
+        <div id="statusResult" class="result-text danger">系統載入中...</div>
     </div>
 
     <div class="section">
@@ -111,16 +111,37 @@
 </div>
 
 <script>
-    function getStorageKey() { return 'brainApp_v9_' + document.getElementById('monthSelector').value; }
+    // 記憶體備用庫（防止無痕模式阻擋 localStorage）
+    const memStore = {};
+
+    function getStorageKey() { 
+        return 'brainApp_v9_' + (document.getElementById('monthSelector').value || '2026-04'); 
+    }
+
+    function safeGet(key) {
+        try { return localStorage.getItem(key); } 
+        catch(e) { return memStore[key] || null; }
+    }
+
+    function safeSet(key, val) {
+        try { localStorage.setItem(key, val); } 
+        catch(e) { memStore[key] = val; }
+    }
+
+    // 🛡️ 鐵壁資料淨化器（絕對防當機核心）
+    function normalizeData(rawData) {
+        let data = {};
+        try { data = typeof rawData === 'string' ? JSON.parse(rawData) : rawData; } catch(e) {}
+        if (!data || typeof data !== 'object') data = {};
+        
+        return {
+            baseGoal: parseInt(data.baseGoal) || 20000,
+            teaching: parseInt(data.teaching) || 0,
+            gigs: parseInt(data.gigs) || 0,
+            ptHours: parseInt(data.ptHours) || 0,
+            bassIncome: parseInt(data.bassIncome) || 0,
+            expenses: Array.isArray(data.expenses) ? data.expenses : []
+        };
+    }
 
     function loadData() {
-        try {
-            const saved = localStorage.getItem(getStorageKey());
-            let data = saved ? JSON.parse(saved) : null;
-            if (!data || !Array.isArray(data.expenses)) {
-                data = { baseGoal: 20000, teaching: 0, gigs: 0, ptHours: 0, bassIncome: 0, expenses: [] };
-            }
-            document.getElementById('baseSurvivalGoal').value = data.baseGoal || 20000;
-            document.getElementById('teaching').value = data.teaching || 0;
-            document.getElementById('gigs').value = data.gigs || 0;
-            document.getElementById('ptHours').value = data.ptHours ||
