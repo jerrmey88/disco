@@ -3,67 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>外掛大腦 7.0</title>
+    <title>外掛大腦 8.0</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #121212; margin: 0; padding: 15px; color: #e0e0e0; padding-bottom: 50px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #0a0a0a; margin: 0; padding: 15px; color: #e0e0e0; padding-bottom: 60px; }
         .container { max-width: 500px; margin: 0 auto; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        select { font-size: 1.1rem; padding: 5px; border-radius: 8px; border: 1px solid #333; background: #1e1e1e; color: white; font-weight: bold; }
+        select { font-size: 1rem; padding: 6px; border-radius: 8px; border: 1px solid #333; background: #1a1a1a; color: white; }
         
-        .status-card { background: #1e1e1e; padding: 20px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin-bottom: 20px; text-align: center; border: 1px solid #333; }
-        .water-bar-container { width: 100%; height: 35px; background-color: #333; border-radius: 18px; overflow: hidden; position: relative; margin: 15px 0; }
-        .water-fill { height: 100%; background: linear-gradient(90deg, #00d2ff 0%, #3a7bd5 100%); transition: width 0.4s ease; display: flex; align-items: center; padding-left: 15px; color: white; font-weight: bold; font-size: 0.9rem; white-space: nowrap; }
-        .target-text { font-size: 1.1rem; font-weight: bold; color: #bbb; margin-bottom: 5px; }
-        .result-text { font-size: 1.25rem; font-weight: bold; margin-top: 10px; padding: 15px; border-radius: 12px; line-height: 1.4; border: 1px solid rgba(255,255,255,0.1); }
-        .success { background: rgba(46, 125, 50, 0.2); color: #81c784; }
-        .danger { background: rgba(198, 40, 40, 0.2); color: #e57373; }
-        .survival-tracking { font-size: 0.95rem; color: #aaa; margin-top: 8px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 8px; }
+        /* 狀態區 */
+        .status-card { background: #161616; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px; text-align: center; border: 1px solid #262626; }
+        .main-income-title { font-size: 0.9rem; color: #888; margin-bottom: 5px; letter-spacing: 1px; }
+        .main-income-amount { font-size: 2.2rem; font-weight: 800; color: #00d2ff; margin-bottom: 20px; }
+        
+        .water-bar-container { width: 100%; height: 40px; background-color: #222; border-radius: 20px; overflow: hidden; position: relative; margin-bottom: 10px; border: 1px solid #333; }
+        .water-fill { height: 100%; background: linear-gradient(90deg, #00d2ff 0%, #3a7bd5 100%); transition: width 0.5s cubic-bezier(0.1, 0.7, 1.0, 0.1); display: flex; align-items: center; padding-left: 15px; color: white; font-weight: bold; font-size: 0.85rem; }
+        /* 生存門檻警戒線 */
+        .survival-marker { position: absolute; left: 75%; top: 0; bottom: 0; width: 2px; background-color: rgba(255, 82, 82, 0.6); z-index: 5; }
+        .survival-marker::after { content: '生存線'; position: absolute; top: -18px; left: -15px; font-size: 10px; color: #ff5252; opacity: 0.8; }
 
-        .section { background: #1e1e1e; padding: 15px; border-radius: 16px; margin-bottom: 20px; border: 1px solid #333; }
-        .section h3 { margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid #333; padding-bottom: 8px; color: #00d2ff; }
+        .info-row { display: flex; justify-content: space-between; font-size: 0.85rem; color: #aaa; margin-top: 15px; }
+        .result-text { font-size: 1.1rem; font-weight: bold; margin-top: 15px; padding: 15px; border-radius: 12px; line-height: 1.5; }
+        .success { background: rgba(0, 210, 255, 0.1); color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.3); }
+        .danger { background: rgba(255, 82, 82, 0.1); color: #ff5252; border: 1px solid rgba(255, 82, 82, 0.3); }
+
+        /* 輸入區塊 */
+        .section { background: #161616; padding: 18px; border-radius: 18px; margin-bottom: 20px; border: 1px solid #262626; }
+        .section h3 { margin-top: 0; font-size: 1rem; border-left: 4px solid #00d2ff; padding-left: 10px; margin-bottom: 15px; color: #fff; }
         
         .input-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .input-row label { font-size: 0.95rem; }
-        .input-row input { width: 100px; padding: 10px; border: 1px solid #444; border-radius: 8px; text-align: center; font-size: 1.1rem; background: #2c2c2c; color: #00d2ff; font-weight: bold; }
+        .input-row input { width: 110px; padding: 10px; border: 1px solid #333; border-radius: 10px; text-align: center; font-size: 1rem; background: #222; color: #00d2ff; font-weight: bold; }
 
         .expense-form { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
-        .expense-form input { flex: 2; min-width: 100px; padding: 12px; border: 1px solid #444; border-radius: 8px; background: #2c2c2c; color: white; }
-        .expense-form select { flex: 1; padding: 12px; border-radius: 8px; background: #2c2c2c; color: white; border: 1px solid #444; }
-        .btn-add { width: 100%; padding: 14px; background: #3a7bd5; color: white; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; }
+        .expense-form input { flex: 2; min-width: 100px; padding: 12px; border: 1px solid #333; border-radius: 10px; background: #222; color: white; }
+        .expense-form select { flex: 1.2; padding: 12px; border-radius: 10px; background: #222; color: white; border: 1px solid #333; }
+        .btn-add { width: 100%; padding: 14px; background: #00d2ff; color: #000; border: none; border-radius: 12px; font-size: 1rem; font-weight: bold; cursor: pointer; }
 
         .expense-list { list-style: none; padding: 0; margin: 0; }
-        .expense-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #333; }
-        .tag { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
-        .tag-survival { background: #1565c0; color: white; }
-        .tag-ent-inv { background: #6a1b9a; color: white; }
-        .btn-delete { background: #c62828; color: white; border: none; border-radius: 6px; padding: 6px 10px; font-size: 0.8rem; }
+        .expense-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #222; }
+        .tag { padding: 3px 10px; border-radius: 8px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
+        .tag-S { background: #333; color: #00d2ff; border: 1px solid #00d2ff; }
+        .tag-I { background: #333; color: #a855f7; border: 1px solid #a855f7; }
+        .tag-E { background: #333; color: #f97316; border: 1px solid #f97316; }
+        .btn-delete { color: #555; background: none; border: 1px solid #333; border-radius: 6px; padding: 4px 8px; font-size: 0.75rem; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <h2 style="margin:0; color: #00d2ff;">DISCO SURVIVAL</h2>
+        <h2 style="margin:0; font-size: 1.2rem; letter-spacing: 2px;">DISCO EXTERNAL BRAIN</h2>
         <select id="monthSelector" onchange="loadData()">
-            <option value="2026-04">2026 四月</option>
-            <option value="2026-05">2026 五月</option>
-            <option value="2026-06">2026 六月</option>
+            <option value="2026-04">APR 2026</option>
+            <option value="2026-05">MAY 2026</option>
+            <option value="2026-06">JUN 2026</option>
         </select>
     </div>
 
     <div class="status-card">
-        <div class="target-text">基本生存門檻：<span id="displayTarget">20,000</span></div>
+        <div class="main-income-title">本月目前總收入</div>
+        <div class="main-income-amount" id="topIncome">$0</div>
+        
         <div class="water-bar-container">
-            <div id="waterBar" class="water-fill" style="width: 0%;">目前收入 $0</div>
+            <div class="survival-marker"></div>
+            <div id="waterBar" class="water-fill" style="width: 0%;">
+                基本生存門檻 $<span id="innerTarget">20,000</span>
+            </div>
         </div>
-        <div class="survival-tracking">生存預算餘額：<span id="survivalBalance">20,000</span></div>
-        <div id="statusResult" class="result-text danger">🚨 計算中...</div>
+
+        <div class="info-row">
+            <div>生存預算餘額：<span id="survivalBalance" style="font-weight: bold;">0</span></div>
+            <div>投資/娛樂差額：<span id="extraDiff" style="font-weight: bold;">0</span></div>
+        </div>
+        
+        <div id="statusResult" class="result-text danger">載入中...</div>
     </div>
 
     <div class="section">
         <h3>🎯 設定本月目標</h3>
         <div class="input-row">
-            <label>每月預設門檻 ($)</label>
+            <label>每月預設生存門檻 ($)</label>
             <input type="number" id="baseSurvivalGoal" value="20000" onchange="saveData()">
         </div>
     </div>
@@ -73,7 +91,7 @@
         <div class="input-row"><label>教課收入</label><input type="number" id="teaching" value="0" onchange="saveData()"></div>
         <div class="input-row"><label>已排硬體 (2750/場)</label><input type="number" id="gigs" value="0" onchange="saveData()"></div>
         <div class="input-row"><label>打工時數 (225/hr)</label><input type="number" id="ptHours" value="0" onchange="saveData()"></div>
-        <div class="input-row"><label>Bass 收入</label><input type="number" id="bassIncome" value="0" onchange="saveData()"></div>
+        <div class="input-row"><label>Bass 案子收入</label><input type="number" id="bassIncome" value="0" onchange="saveData()"></div>
     </div>
 
     <div class="section">
@@ -83,16 +101,17 @@
             <input type="number" id="expAmount" placeholder="金額">
             <select id="expCategory">
                 <option value="生存">生存</option>
-                <option value="投資/娛樂">投資/娛樂</option>
+                <option value="投資">投資</option>
+                <option value="娛樂">娛樂</option>
             </select>
-            <button class="btn-add" onclick="addExpense()">+ 記一筆</button>
+            <button class="btn-add" onclick="addExpense()">+ 紀錄支出</button>
         </div>
         <ul id="expenseList" class="expense-list"></ul>
     </div>
 </div>
 
 <script>
-    function getStorageKey() { return 'brainApp_v7_' + document.getElementById('monthSelector').value; }
+    function getStorageKey() { return 'brainApp_v8_' + document.getElementById('monthSelector').value; }
 
     function loadData() {
         const saved = localStorage.getItem(getStorageKey());
@@ -123,7 +142,7 @@
         const amount = parseInt(document.getElementById('expAmount').value);
         const category = document.getElementById('expCategory').value;
         if (!name || isNaN(amount)) return;
-        let data = JSON.parse(localStorage.getItem(getStorageKey())) || { baseGoal: 20000, teaching: 0, gigs: 0, ptHours: 0, bassIncome: 0, expenses: [] };
+        let data = JSON.parse(localStorage.getItem(getStorageKey())) || { expenses: [] };
         data.expenses.push({ id: Date.now(), name, amount, category });
         localStorage.setItem(getStorageKey(), JSON.stringify(data));
         document.getElementById('expName').value = ''; document.getElementById('expAmount').value = '';
@@ -142,49 +161,54 @@
     function renderExpenses(expenses) {
         const list = document.getElementById('expenseList'); list.innerHTML = '';
         expenses.forEach(exp => {
+            let tagChar = exp.category[0];
+            let tagClass = exp.category === '生存' ? 'tag-S' : (exp.category === '投資' ? 'tag-I' : 'tag-E');
             const li = document.createElement('li'); li.className = 'expense-item';
-            li.innerHTML = `<div><span class="tag ${exp.category==='生存'?'tag-survival':'tag-ent-inv'}">${exp.category}</span>
-                <span style="margin-left:8px;">${exp.name}</span></div>
-                <div><span style="margin-right:10px;">$${exp.amount}</span><button class="btn-delete" onclick="deleteExpense(${exp.id})">刪除</button></div>`;
+            li.innerHTML = `<div><span class="tag ${tagClass}">${tagChar}</span><span style="margin-left:12px;">${exp.name}</span></div>
+                <div><span style="margin-right:12px;">$${exp.amount.toLocaleString()}</span><button class="btn-delete" onclick="deleteExpense(${exp.id})">DEL</button></div>`;
             list.appendChild(li);
         });
     }
 
     function calculateState(data) {
         const income = data.teaching + (data.gigs * 2750) + (data.ptHours * 225) + data.bassIncome;
-        let survivalSpend = 0, investSpend = 0;
+        let s_spend = 0, i_spend = 0, e_spend = 0;
         data.expenses.forEach(exp => {
-            if (exp.category === '生存') survivalSpend += exp.amount;
-            else investSpend += exp.amount;
+            if (exp.category === '生存') s_spend += exp.amount;
+            else if (exp.category === '投資') i_spend += exp.amount;
+            else e_spend += exp.amount;
         });
 
-        // 核心邏輯修正：
-        // 1. 生存餘額還是顯示給你看，讓你知道吃飯花多少，但它不直接決定「紅燈」
-        let survivalBal = data.baseGoal - survivalSpend;
+        const extra_spend = i_spend + e_spend;
+        const s_bal = data.baseGoal - s_spend;
+        const over_s = s_bal < 0 ? Math.abs(s_bal) : 0;
         
-        // 2. 達標判斷：總收入 必須大於 (設定的門檻 + 所有的投資娛樂花費)
-        // 且 如果生存超支(survivalBal < 0)，超支的部分也會算入目標，因為你得賺回來補。
-        let overSpend = survivalBal < 0 ? Math.abs(survivalBal) : 0;
-        let finalRequired = data.baseGoal + investSpend + overSpend;
-        let freeCash = income - (survivalSpend + investSpend);
+        // 總目標門檻 = 手動生存門檻 + 實際發生的投資娛樂 + 超支部分
+        const totalRequired = data.baseGoal + extra_spend + over_s;
+        const netFree = income - (s_spend + extra_spend);
 
-        document.getElementById('displayTarget').innerText = data.baseGoal.toLocaleString();
-        document.getElementById('survivalBalance').innerText = survivalBal.toLocaleString();
-        document.getElementById('survivalBalance').style.color = survivalBal < 0 ? '#ff5252' : '#81c784';
+        // 更新 UI
+        document.getElementById('topIncome').innerText = `$${income.toLocaleString()}`;
+        document.getElementById('innerTarget').innerText = data.baseGoal.toLocaleString();
+        
+        const balEl = document.getElementById('survivalBalance');
+        balEl.innerText = s_bal.toLocaleString();
+        balEl.style.color = s_bal < 0 ? '#ff5252' : '#00d2ff';
+
+        document.getElementById('extraDiff').innerText = extra_spend.toLocaleString();
 
         let bar = document.getElementById('waterBar');
-        let perc = Math.min(100, (income / finalRequired) * 100) || 0;
-        bar.style.width = perc + '%';
-        bar.innerText = `目前收入 $${income.toLocaleString()}`;
+        // 視覺調整：生存線在 75%，所以百分比要以此縮放
+        let visualPerc = Math.min(100, (income / totalRequired) * 100) || 0;
+        bar.style.width = visualPerc + '%';
 
         let res = document.getElementById('statusResult');
-        if (income >= finalRequired) {
+        if (income >= totalRequired) {
             res.className = 'result-text success';
-            res.innerText = `🎉 順利活下來了！\n投資/娛樂可用：+${freeCash.toLocaleString()} 元`;
+            res.innerText = `🎉 已跨越生存線！\n剩餘可投資/娛樂資金：+${netFree.toLocaleString()} 元`;
         } else {
-            let gap = finalRequired - income;
             res.className = 'result-text danger';
-            res.innerText = `🚧 尚未達標。距離存活與慾望補完還差 ${gap.toLocaleString()} 元。`;
+            res.innerText = `🚧 戰鬥中：距離全數達標還差 ${(totalRequired - income).toLocaleString()} 元`;
         }
     }
     loadData();
