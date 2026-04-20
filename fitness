@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DISCO ENERGY</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap');
+
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background-color: #050000; margin: 0; padding: 15px; color: #fff; padding-bottom: 50px; }
+        .container { max-width: 500px; margin: 0 auto; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #331100; padding-bottom: 10px; }
+        h2 { margin: 0; font-family: 'Oswald', sans-serif; font-size: 1.5rem; letter-spacing: 2px; color: #ff4500; text-shadow: 0 0 10px rgba(255, 69, 0, 0.5); }
+        select { font-size: 1rem; padding: 6px; border-radius: 8px; border: 1px solid #ff4500; background: #1a0500; color: #ff8c00; font-weight: bold; outline: none; }
+
+        /* 計時器主視覺 */
+        .timer-card { background: linear-gradient(145deg, #1a0500, #0a0000); padding: 30px 20px; border-radius: 24px; box-shadow: 0 10px 40px rgba(255, 69, 0, 0.2); text-align: center; border: 1px solid #331100; margin-bottom: 25px; position: relative; overflow: hidden; }
+        .timer-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #ff8c00, #ff0000); }
+        
+        .phase-text { font-size: 1.2rem; font-weight: 900; color: #ff8c00; margin-bottom: 10px; letter-spacing: 2px; text-transform: uppercase; }
+        .time-display { font-family: 'Oswald', sans-serif; font-size: 6rem; font-weight: 700; color: #fff; line-height: 1; margin: 10px 0; text-shadow: 0 0 30px rgba(255, 69, 0, 0.8); }
+        .time-display.rest { color: #00e5ff; text-shadow: 0 0 30px rgba(0, 229, 255, 0.6); }
+        
+        .exercise-name { font-size: 1.5rem; font-weight: bold; color: #eee; margin-top: 5px; height: 35px; }
+        .progress-info { font-size: 0.9rem; color: #888; margin-top: 15px; display: flex; justify-content: space-between; padding: 0 20px; font-weight: bold; }
+
+        /* 按鈕區 */
+        .controls { display: flex; gap: 15px; margin-bottom: 25px; }
+        .btn { flex: 1; padding: 18px; border: none; border-radius: 16px; font-size: 1.2rem; font-weight: 900; cursor: pointer; transition: transform 0.1s; text-transform: uppercase; letter-spacing: 1px; }
+        .btn:active { transform: scale(0.95); }
+        .btn-start { background: linear-gradient(45deg, #ff4500, #ff0000); color: white; box-shadow: 0 5px 20px rgba(255, 0, 0, 0.4); }
+        .btn-pause { background: #222; color: #fff; border: 1px solid #444; }
+        .btn-done { background: linear-gradient(45deg, #00c6ff, #0072ff); color: white; margin-top: 10px; width: 100%; box-shadow: 0 5px 20px rgba(0, 114, 255, 0.4); }
+
+        /* 設定區 */
+        .settings-card { background: #110500; padding: 15px; border-radius: 16px; margin-bottom: 25px; border: 1px solid #331100; }
+        .settings-header { font-size: 0.9rem; color: #ff8c00; margin-bottom: 15px; font-weight: bold; border-bottom: 1px solid #331100; padding-bottom: 5px; }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.9rem; color: #ccc; }
+        .setting-row input { width: 60px; padding: 8px; border-radius: 8px; border: 1px solid #552200; background: #000; color: #ff8c00; text-align: center; font-weight: bold; font-size: 1rem; }
+
+        /* 打卡日曆 */
+        .calendar-card { background: #111; padding: 20px; border-radius: 20px; border: 1px solid #222; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .calendar-title { font-weight: 900; color: #fff; font-size: 1.1rem; letter-spacing: 1px; }
+        .strike-count { color: #ff4500; font-weight: bold; font-size: 0.9rem; }
+        
+        .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+        .day-label { text-align: center; font-size: 0.7rem; color: #666; margin-bottom: 5px; font-weight: bold; }
+        .day-box { aspect-ratio: 1; background: #222; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: bold; color: #555; transition: all 0.3s; cursor: pointer; border: 1px solid #333; }
+        .day-box.completed { background: linear-gradient(135deg, #ff4500, #ff0000); color: white; border-color: #ff8c00; box-shadow: 0 0 10px rgba(255, 69, 0, 0.4); }
+        .day-box.today { border: 2px solid #fff; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2>🔥 ENERGY CORE</h2>
+        <select id="monthSelector" onchange="renderCalendar()">
+            <option value="4">四月</option>
+            <option value="5">五月</option>
+            <option value="6">六月</option>
+            <option value="7">七月</option>
+        </select>
+    </div>
+
+    <div class="timer-card">
+        <div class="phase-text" id="phaseText">READY TO BURN</div>
+        <div class="time-display" id="timeDisplay">00:00</div>
+        <div class="exercise-name" id="exerciseName">準備開始</div>
+        <div class="progress-info">
+            <span id="setInfo">組數: 1 / 3</span>
+            <span id="exInfo">動作: 1 / 4</span>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-pause" id="btnReset" onclick="resetTimer()">重置</button>
+        <button class="btn btn-start" id="btnStart" onclick="toggleTimer()">開始燃燒</button>
+    </div>
+
+    <div class="settings-card">
+        <div class="settings-header">⚙️ 訓練參數設定</div>
+        <div class="setting-row">
+            <label>單個動作時間 (秒)</label>
+            <input type="number" id="workTime" value="45" onchange="updateSettings()">
+        </div>
+        <div class="setting-row">
+            <label>動作間休息 (秒)</label>
+            <input type="number" id="restTime" value="15" onchange="updateSettings()">
+        </div>
+        <div class="setting-row">
+            <label>組間大休息 (秒)</label>
+            <input type="number" id="setRestTime" value="60" onchange="updateSettings()">
+        </div>
+    </div>
+
+    <div class="calendar-card">
+        <div class="calendar-header">
+            <div class="calendar-title">🏆 能量灌注紀錄</div>
+            <div class="strike-count">本月累積: <span id="monthTotal">0</span> 天</div>
+        </div>
+        <div class="grid" style="margin-bottom: 5px;">
+            <div class="day-label">日</div><div class="day-label">一</div><div class="day-label">二</div>
+            <div class="day-label">三</div><div class="day-label">四</div><div class="day-label">五</div><div class="day-label">六</div>
+        </div>
+        <div class="grid" id="calendarGrid"></div>
+        
+        <button class="btn btn-done" onclick="markTodayComplete()">⚡ 提早手動打卡</button>
+    </div>
+</div>
+
+<script>
+    // --- 訓練邏輯變數 ---
+    const exercises = ["標準伏地挺身", "深蹲 (Squats)", "棒式 (Plank)", "俄羅斯旋轉"];
+    let config = { work: 45, rest: 15, setRest: 60, totalSets: 3 };
+    
+    let timer;
+    let isRunning = false;
+    let timeLeft = 0;
+    
+    let currentSet = 1;
+    let currentExIndex = 0;
+    let currentPhase = 'idle'; // idle, work, rest, setRest, done
+
+    // --- 音效提示 (利用瀏覽器內建 Web Audio API 發出嗶聲) ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(freq, duration) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + duration);
+    }
+
+    // --- 系統初始化 ---
+    function updateSettings() {
+        config.work = parseInt(document.getElementById('workTime').value) || 45;
+        config.rest = parseInt(document.getElementById('restTime').value) || 15;
+        config.setRest = parseInt(document.getElementById('setRestTime').value) || 60;
+        resetTimer();
+    }
+
+    function formatTime(seconds) {
+        const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+        const s = (seconds % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
+    }
+
+    function updateUI() {
+        const display = document.getElementById('timeDisplay');
+        display.innerText = formatTime(timeLeft);
+        document.getElementById('setInfo').innerText = `組數: ${currentSet} / ${config.totalSets}`;
+        document.getElementById('exInfo').innerText = `動作: ${currentExIndex + 1} / 4`;
+        
+        const phaseText = document.getElementById('phaseText');
+        const exName = document.getElementById('exerciseName');
+
+        if (currentPhase === 'work') {
+            phaseText.innerText = '🔥 WORK!';
+            phaseText.style.color = '#ff4500';
+            display.className = 'time-display';
+            exName.innerText = exercises[currentExIndex];
+        } else if (currentPhase === 'rest') {
+            phaseText.innerText = '💧 REST';
+            phaseText.style.color = '#00e5ff';
+            display.className = 'time-display rest';
+            exName.innerText = `下一個: ${exercises[currentExIndex]}`;
+        } else if (currentPhase === 'setRest') {
+            phaseText.innerText = '🔋 大休息';
+            phaseText.style.color = '#00ffaa';
+            display.className = 'time-display rest';
+            exName.innerText = '喝口水，準備下一組';
+        } else if (currentPhase === 'done') {
+            phaseText.innerText = '🏆 訓練完成';
+            phaseText.style.color = '#ffcc00';
+            display.className = 'time-display';
+            exName.innerText = '能量已充滿！';
+            document.getElementById('timeDisplay').innerText = 'DONE';
+        } else {
+            phaseText.innerText = 'READY';
+            exName.innerText = '準備開始';
+            display.className = 'time-display';
+            document.getElementById('timeDisplay').innerText = formatTime(config.work);
+        }
+    }
+
+    // --- 計時器核心邏輯 ---
+    function stepLogic() {
+        // 倒數音效 (最後3秒)
+        if (timeLeft > 0 && timeLeft <= 3) playBeep(800, 0.2);
+        // 切換階段音效
+        if (timeLeft === 0) playBeep(1200, 0.5);
+
+        if (timeLeft > 0) {
+            timeLeft--;
+            updateUI();
+            return;
+        }
+
+        // 狀態機切換
+        if (currentPhase === 'work') {
+            currentExIndex++;
+            if (currentExIndex >= exercises.length) {
+                // 一組做完了
+                currentExIndex = 0;
+                if (currentSet >= config.totalSets) {
+                    // 全做完了！
+                    currentPhase = 'done';
+                    isRunning = false;
+                    clearInterval(timer);
+                    document.getElementById('btnStart').innerText = "完成";
+                    markTodayComplete(); // 自動打卡
+                    updateUI();
+                    return;
+                } else {
+                    currentSet++;
+                    currentPhase = 'setRest';
+                    timeLeft = config.setRest;
+                }
+            } else {
+                // 還有動作，進入小休息
+                currentPhase = 'rest';
+                timeLeft = config.rest;
+            }
+        } else if (currentPhase === 'rest' || currentPhase === 'setRest') {
+            currentPhase = 'work';
+            timeLeft = config.work;
+        }
+
+        updateUI();
+    }
+
+    function toggleTimer() {
+        if (currentPhase === 'idle') {
+            currentPhase = 'work';
+            timeLeft = config.work;
+        }
+        if (currentPhase === 'done') return;
+
+        if (isRunning) {
+            clearInterval(timer);
+            document.getElementById('btnStart').innerText = "繼續";
+        } else {
+            timer = setInterval(stepLogic, 1000);
+            document.getElementById('btnStart').innerText = "暫停";
+            // 啟動 AudioContext
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+        }
+        isRunning = !isRunning;
+        updateUI();
+    }
+
+    function resetTimer() {
+        clearInterval(timer);
+        isRunning = false;
+        currentPhase = 'idle';
+        currentSet = 1;
+        currentExIndex = 0;
+        timeLeft = config.work;
+        document.getElementById('btnStart').innerText = "開始燃燒";
+        updateUI();
+    }
+
+    // --- 日曆與打卡系統 ---
+    const currentYear = 2026;
+    
+    function getStorageKey() {
+        const m = document.getElementById('monthSelector').value;
+        return `disco_workout_${currentYear}_${m}`;
+    }
+
+    function getCompletedDays() {
+        try {
+            const data = localStorage.getItem(getStorageKey());
+            return data ? JSON.parse(data) : [];
+        } catch(e) { return []; }
+    }
+
+    function markTodayComplete() {
+        // 使用真實世界的今天日期，但為了測試方便，我們直接抓使用者的當下日期
+        const today = new Date().getDate(); 
+        const currentMonth = new Date().getMonth() + 1;
+        
+        // 如果選擇的月份剛好是真實月份，才進行當日打卡
+        const selectedMonth = parseInt(document.getElementById('monthSelector').value);
+        if(selectedMonth !== currentMonth) {
+            alert('只能在當下真實的月份進行打卡喔！');
+            return;
+        }
+
+        let days = getCompletedDays();
+        if (!days.includes(today)) {
+            days.push(today);
+            localStorage.setItem(getStorageKey(), JSON.stringify(days));
+            renderCalendar();
+            alert('⚡ 能量注入成功！本日已打卡。');
+        }
+    }
+
+    function toggleDay(day) {
+        // 允許手動點擊格子補打卡或取消
+        let days = getCompletedDays();
+        if (days.includes(day)) {
+            days = days.filter(d => d !== day);
+        } else {
+            days.push(day);
+        }
+        localStorage.setItem(getStorageKey(), JSON.stringify(days));
+        renderCalendar();
+    }
+
+    function renderCalendar() {
+        const month = parseInt(document.getElementById('monthSelector').value);
+        const grid = document.getElementById('calendarGrid');
+        grid.innerHTML = '';
+        
+        const completedDays = getCompletedDays();
+        document.getElementById('monthTotal').innerText = completedDays.length;
+
+        // 計算該月天數與第一天是星期幾
+        const daysInMonth = new Date(currentYear, month, 0).getDate();
+        const firstDay = new Date(currentYear, month - 1, 1).getDay();
+        const today = new Date().getDate();
+        const currentM = new Date().getMonth() + 1;
+
+        // 填充前面的空白格子
+        for (let i = 0; i < firstDay; i++) {
+            const emptyBox = document.createElement('div');
+            grid.appendChild(emptyBox);
+        }
+
+        // 填充日子
+        for (let i = 1; i <= daysInMonth; i++) {
+            const box = document.createElement('div');
+            box.className = 'day-box';
+            box.innerText = i;
+            
+            if (completedDays.includes(i)) {
+                box.classList.add('completed');
+                box.innerText = '✔';
+            }
+            
+            if (i === today && month === currentM) {
+                box.classList.add('today');
+            }
+
+            // 點擊可以補打卡
+            box.onclick = () => toggleDay(i);
+            grid.appendChild(box);
+        }
+    }
+
+    // 初始化
+    document.getElementById('monthSelector').value = new Date().getMonth() + 1; // 自動選到當前真實月份
+    updateSettings();
+    renderCalendar();
+
+</script>
+</body>
+</html>
